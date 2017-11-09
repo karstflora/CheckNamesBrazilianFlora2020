@@ -7,7 +7,9 @@
 ###---------------------------------------------------------------------###
 
 if(!require(pacman)) install.packages("pacman")
-pacman::p_load(data.table, raster)
+pacman::p_load(data.table, raster,stringr, stringdist, flora)
+
+# stringdist - comparação de strings
 
 ###---------------------------------------------------------------------###
 
@@ -19,7 +21,7 @@ pacman::p_load(data.table, raster)
 
 ###---------------------------------------------------------------------###
 
-taxon.full <- fread("E:/GitHub/CheckNamesBrazilianFlora2020/taxon.txt")
+taxon.full <- fread(paste0(getwd(),"/taxon.txt"))
 
 t <- taxon.full$taxonRank %in% c("ESPECIE","VARIEDADE","SUB_ESPECIE")
 taxon <- taxon.full[t,]
@@ -32,16 +34,16 @@ family <- taxon.full[f,]
 
 ###---------------------------------------------------------------------###
 
-distribution <- fread("E:/GitHub/CheckNamesBrazilianFlora2020/distribution.txt")
+distribution <- fread(paste0(getwd(),"/distribution.txt"))
 
 ###---------------------------------------------------------------------###
 
-speciesprofile <- fread("E:/GitHub/CheckNamesBrazilianFlora2020/speciesprofile.txt")
+speciesprofile <- fread(paste0(getwd(),"/speciesprofile.txt"))
 
 ###---------------------------------------------------------------------###
 
-typesandspecimen <- fread("E:/GitHub/CheckNamesBrazilianFlora2020/typesandspecimen.txt")
-reference <- fread("T:/GitHub/CheckNamesBrazilianFlora2020/reference.txt")
+typesandspecimen <- fread(paste0(getwd(),"/typesandspecimen.txt"))
+reference <- fread(paste0(getwd(),"/reference.txt"))
 
 ###---------------------------------------------------------------------###
 
@@ -111,7 +113,26 @@ distribuicao.uf.FloraBR2020<-function(id=NA)
   return(uf.d)
 }
 
-nome.aceito.FloraBR2020<-function(g='',s='',i='')
+###---------------------------------------------------------------------###
+
+# Paullinia	
+# meliaefolia
+# 
+# 
+# # g= 'Oncidium'
+# # s= 'hookerii'
+# # 
+# g= 'Paullinia	'
+# s= 'meliaefolia'
+# i= ''
+# x=nome.aceito.FloraBR2020(g,s,i, maxDist=2)
+# x
+# # 
+# index <- amatch(paste0(g,s,i),paste0(taxon$genus,taxon$specificEpithet,taxon$infraspecificEpithet), maxDist = 3, nomatch = FALSE, method ='lv')
+# name <- taxon[index,c("id","scientificName","family","genus","specificEpithet","infraspecificEpithet","taxonRank","scientificNameAuthorship","taxonomicStatus","nomenclaturalStatus","higherClassification","acceptedNameUsage")]
+
+##### comparar tudo em maiusculo ou minusculoa
+nome.aceito.FloraBR2020<-function(g='',s='',i='',maxDist=2)
 {
   
   nameNA <-data.frame(
@@ -131,22 +152,169 @@ nome.aceito.FloraBR2020<-function(g='',s='',i='')
     scientificNamewithoutAuthor = "",
     stringsAsFactors = F )
   
-  s <- gsub('sp.',"",s )
+  s <- ifelse(is.na(s),'',s)
+  g <- ifelse(is.na(g),'',g)
+  i <- ifelse(is.na(i),'',i)
+
+  #socorro !!!
+  #s <- gsub("?","fl",s )
+  
   s <- gsub("[0-9]","",s )
-  s <- gsub('cf.',"",s )
-  s <- gsub('aff.',"",s )
+  s <- gsub('cf.',"",s, fixed=T )
+  s <- gsub('aff.',"",s, fixed=T )
+  s <- gsub('sp.',"",s, fixed=T)
   
-  s <- gsub("?","",s )
+  i <- gsub('subsp.',"",i, fixed=T )
+  i <- gsub('var.',"",i, fixed=T )
   
-  i <- gsub('subsp.',"",i )
-  i <- gsub('var.',"",i )
-  
-  g <- trim(g)
-  s <- trim(s)
-  i <- trim(i)
+  g <- str_trim(g)
+  s <- str_trim(s)
+  i <- str_trim(i)
   
   name<-{}
   status <-""
+  
+  if(g!=""){
+    
+    if (g!=""&s!=""){
+      
+      index <- amatch(paste0(g,s,i),paste0(taxon$genus,taxon$specificEpithet,taxon$infraspecificEpithet), maxDist = maxDist, nomatch = FALSE, method ='lv')
+      name <- taxon[index,c("id","scientificName","family","genus","specificEpithet","infraspecificEpithet","taxonRank","scientificNameAuthorship","taxonomicStatus","nomenclaturalStatus","higherClassification","acceptedNameUsage")]
+      # c <- g == taxon$genus &
+      #   s == taxon$specificEpithet &
+      #   i == taxon$infraspecificEpithet
+      # name <- taxon[c,c("id","scientificName","family","genus","specificEpithet","infraspecificEpithet","taxonRank","scientificNameAuthorship","taxonomicStatus","nomenclaturalStatus","higherClassification","acceptedNameUsage")]
+    }
+    
+    if (g!=""&s==""){
+      # buscar genero exato
+      # index <- amatch(paste0(g,'NOME_ACEITO',"NOME_CORRETO"), paste0(genus$genus,genus$taxonomicStatus,genus$nomenclaturalStatus), maxDist = 1, nomatch = FALSE, method ='lv')
+      # name <- taxon[index,c("id","scientificName","family","genus","specificEpithet","infraspecificEpithet","taxonRank","scientificNameAuthorship","taxonomicStatus","nomenclaturalStatus","higherClassification","acceptedNameUsage")]
+      c <- g == genus$genus & genus$taxonomicStatus == 'NOME_ACEITO' & genus$nomenclaturalStatus == "NOME_CORRETO"
+      name <- genus[c,c("id","scientificName","family","genus","specificEpithet","infraspecificEpithet","taxonRank","scientificNameAuthorship","taxonomicStatus","nomenclaturalStatus","higherClassification","acceptedNameUsage")]
+    }
+    
+    
+    if (g!=""&s==""&!NROW(name)>=1){
+      # buscar familia exato
+      c <- g == family$family
+      name <- family[c,c("id","scientificName","family","genus","specificEpithet","infraspecificEpithet","taxonRank","scientificNameAuthorship","taxonomicStatus","nomenclaturalStatus","higherClassification","acceptedNameUsage")]
+    }
+    
+    if (!NROW(name)>0){name<-nameNA}
+    else {
+      if( (name$taxonomicStatus[1] != 'NOME_ACEITO') ){
+        
+        status <- paste0('ATUALIZADO: ',name$taxonomicStatus,' (',name$nomenclaturalStatus,')')
+
+        index <- amatch(paste0(name$acceptedNameUsage,'NOME_ACEITO'), paste0(taxon$scientificName, taxon$taxonomicStatus), maxDist = maxDist, nomatch = FALSE, method ='lv')
+        name <- taxon[index,c("id","scientificName","family","genus","specificEpithet","infraspecificEpithet","taxonRank","scientificNameAuthorship","taxonomicStatus","nomenclaturalStatus","higherClassification","acceptedNameUsage")]
+  
+        # nome.valido <-  name$acceptedNameUsage == taxon$scientificName & (taxon$taxonomicStatus == 'NOME_ACEITO')
+        # name <- taxon[nome.valido,c("id","scientificName","family","genus","specificEpithet","infraspecificEpithet","taxonRank","scientificNameAuthorship","taxonomicStatus","nomenclaturalStatus","higherClassification","acceptedNameUsage")]
+        if (!NROW(name)>0){
+          name<-nameNA
+          status <- 'Conferir no Site. Prováel sinônimo sem nome correto.'}
+        
+      }
+      
+      if (status==""){status <-  "OK"}
+      
+      if ((status == "OK") & (paste0(g,s,i)  != paste0(name$genus[1],name$specificEpithet[1],name$infraspecificEpithet[1])) &
+          (any(name$taxonRank[1]!= c("FAMILIA","GENERO")))) {status <-  "Grafia incorreta"}
+      
+      name$status[1] <- status
+      name$scientificNamewithoutAuthor[1] <- ""
+      
+      if(name$taxonRank[1]=="ESPECIE") {name$scientificNamewithoutAuthor[1] <-
+        paste0(name$genus[1]," ",
+               name$specificEpithet[1])}
+      
+      
+      if(name$taxonRank[1]=="VARIEDADE") {
+        name$infraspecificEpithet[1] <- paste0("var. ", name$infraspecificEpithet[1])
+        name$scientificNamewithoutAuthor[1] <- paste0(name$genus[1], " ", name$specificEpithet[1], " ", name$infraspecificEpithet[1])
+        # name$scientificNamewithoutAuthor[1] <-
+        # paste0(name$genus[1]," ",
+        #        name$specificEpithet[1]," var. ",
+        #        name$infraspecificEpithet[1])
+        }
+      
+      
+      if(name$taxonRank[1]=="SUB_ESPECIE") {
+        name$infraspecificEpithet[1] <- paste0("subsp. ", name$infraspecificEpithet[1])
+        name$scientificNamewithoutAuthor[1] <- paste0(name$genus[1], " ", name$specificEpithet[1], " ", name$infraspecificEpithet[1])
+        # name$scientificNamewithoutAuthor[1] <-
+        #   paste0(name$genus[1]," ",
+        #          name$specificEpithet[1]," subsp. ",
+        #          name$infraspecificEpithet[1])
+      }
+      
+      
+      
+      
+      if(name$taxonRank[1]=="SUB_ESPECIE") {name$scientificNamewithoutAuthor[1] <-
+        paste0(name$genus[1]," ",
+               name$specificEpithet[1]," subsp. ",
+               name$infraspecificEpithet[1])}
+      
+      if(name$taxonRank[1]=="GENERO") {name$scientificNamewithoutAuthor[1] <- name$genus[1]}
+      
+      if(name$taxonRank[1]=="FAMILIA") {name$scientificNamewithoutAuthor[1] <- name$family[1]}
+      
+    } 
+  }else {
+    name<-nameNA
+    name$status[1] <- "VAZIO"
+    name$scientificNamewithoutAuthor[1] <-""}
+  
+  if(is.na(name$status[1])){name$status[1] <- "sinônimo de sinônimo"
+  name$scientificNamewithoutAuthor[1] <-""}
+  
+  return(name[1,])
+}
+
+###---------------------------------------------------------------------###
+nome.aceito.FloraBR2020_exato<-function(g='',s='',i='')
+{
+  
+nameNA <-data.frame(
+  id = "",
+  scientificName = "",
+  family = "",
+  genus = "",
+  specificEpithet = "",
+  infraspecificEpithet = "",
+  taxonRank = "",
+  scientificNameAuthorship = "",
+  taxonomicStatus = "",
+  nomenclaturalStatus = "",
+  higherClassification = "",
+  acceptedNameUsage = "",
+  status = 'não encontrado',    
+  scientificNamewithoutAuthor = "",
+  stringsAsFactors = F )
+  
+ s <- ifelse(is.na(s),'',s)
+ g <- ifelse(is.na(g),'',g)
+ i <- ifelse(is.na(i),'',i)
+
+ s <- gsub('sp.',"",s, fixed=T)
+ s <- gsub("[0-9]","",s )
+ s <- gsub('cf.',"",s, fixed=T )
+ s <- gsub('aff.',"",s, fixed=T )
+   
+ s <- gsub("?","",s )
+ i <- gsub('subsp.',"",i, fixed=T )
+ i <- gsub('var.',"",i, fixed=T )
+
+ g <- str_trim(g)
+ s <- str_trim(s)
+ i <- str_trim(i)
+
+ name<-{}
+  status <-""
+  
   if(g!=""){
     
     if (g!=""&s!=""){
@@ -169,12 +337,18 @@ nome.aceito.FloraBR2020<-function(g='',s='',i='')
     
     if (!NROW(name)>0){name<-nameNA}
     else {
-      #print(paste0(name$scientificName," ",name$nomenclaturalStatus))
-      if( name$taxonomicStatus != 'NOME_ACEITO' ){
-        status <- 'ATUALIZADO'
-        nome.valido <-  name$acceptedNameUsage == taxon$scientificName & taxon$taxonomicStatus == 'NOME_ACEITO' #& taxon$nomenclaturalStatus == "NOME_CORRETO"
+      if( (name$taxonomicStatus != 'NOME_ACEITO') ){
+        
+        status <- paste0('ATUALIZADO: ',name$taxonomicStatus,' (',name$nomenclaturalStatus,')')
+        nome.valido <-  name$acceptedNameUsage == taxon$scientificName & (taxon$taxonomicStatus == 'NOME_ACEITO')
         name <- taxon[nome.valido,c("id","scientificName","family","genus","specificEpithet","infraspecificEpithet","taxonRank","scientificNameAuthorship","taxonomicStatus","nomenclaturalStatus","higherClassification","acceptedNameUsage")]
+#aqui
+        if (!NROW(name)>0){
+          name<-nameNA
+          status <- 'Conferir no Site. Prováel sinônimo sem nome correto.'}
+        
       }
+
       if (status==""){status <-  "OK"}
       
       name$status[1] <- status
@@ -198,8 +372,7 @@ nome.aceito.FloraBR2020<-function(g='',s='',i='')
       if(name$taxonRank=="GENERO") {name$scientificNamewithoutAuthor[1] <- name$genus[1]}
       
       if(name$taxonRank=="FAMILIA") {name$scientificNamewithoutAuthor[1] <- name$family[1]}
-      
-      
+
     } 
   }else {
     name<-nameNA
@@ -209,30 +382,32 @@ nome.aceito.FloraBR2020<-function(g='',s='',i='')
   if(is.na(name$status[1])){name$status[1] <- "sinônimo de sinônimo"
   name$scientificNamewithoutAuthor[1] <-""}
   
-  print(name$status[1])  
-  
   return(name[1,])
 }
-
 ###---------------------------------------------------------------------###
 
 sinonimos.FloraBR2020<-function(g='',s='',i='')
 {
   
-  s <- gsub('sp.',"",s )
-  s <- gsub("[0:9]","",s )
-  s <- gsub('cf.',"",s )
-  s <- gsub('aff.',"",s )
+  s <- ifelse(is.na(s),'',s)
+  g <- ifelse(is.na(g),'',g)
+  i <- ifelse(is.na(i),'',i)
+  
+  s <- gsub('sp.',"",s, fixed=T)
+  s <- gsub("[0-9]","",s )
+  s <- gsub('cf.',"",s, fixed=T )
+  s <- gsub('aff.',"",s, fixed=T )
   
   s <- gsub("?","",s )
+  i <- gsub('subsp.',"",i, fixed=T )
+  i <- gsub('var.',"",i, fixed=T )
   
-  i <- gsub('subsp.',"",i )
-  i <- gsub('var.',"",i )
+  g <- str_trim(g)
+  s <- str_trim(s)
+  i <- str_trim(i)
   
-  g <- trim(g)
-  s <- trim(s)
-  i <- trim(i)
-  
+  # retorno = data.frame(synonymWithoutAuthor='')
+  # 
   name<-{}
   if(g!=""){
     
@@ -245,9 +420,22 @@ sinonimos.FloraBR2020<-function(g='',s='',i='')
     
     if (!NROW(name)>0){return(NA)}
     else {
+
       if( name$taxonomicStatus != 'NOME_ACEITO' ){
-        nome.valido <-  name$acceptedNameUsage == taxon$scientificName & taxon$taxonomicStatus == 'NOME_ACEITO' #& taxon$nomenclaturalStatus == "NOME_CORRETO"
-        name <- taxon[nome.valido,c("id","parentNameUsageID","scientificName","family","genus","specificEpithet","infraspecificEpithet","taxonRank","scientificNameAuthorship","taxonomicStatus","nomenclaturalStatus","higherClassification","acceptedNameUsage")]
+       
+#atualizado 24 09 2017 
+        
+        status <- paste0('ATUALIZADO: ',name$taxonomicStatus,' (',name$nomenclaturalStatus,')')
+        nome.valido <-  name$acceptedNameUsage == taxon$scientificName & (taxon$taxonomicStatus == 'NOME_ACEITO')
+        name <- taxon[nome.valido,c("id","scientificName","family","genus","specificEpithet","infraspecificEpithet","taxonRank","scientificNameAuthorship","taxonomicStatus","nomenclaturalStatus","higherClassification","acceptedNameUsage")]
+        if (!NROW(name)>0){
+          name<-nameNA
+          status <- 'Conferir no Site. Prováel sinônimo sem nome correto.'}
+        
+        # #aqui   nome.valido <-  name$acceptedNameUsage == taxon$scientificName & taxon$taxonomicStatus == 'NOME_ACEITO' #& taxon$nomenclaturalStatus == "NOME_CORRETO"     
+        # nome.valido <-  name$acceptedNameUsage == taxon$scientificName & (taxon$taxonomicStatus == 'NOME_ACEITO' | taxon$taxonomicStatus == 'NOME_MAL_APLICADO')
+        # name <- taxon[nome.valido,c("id","parentNameUsageID","scientificName","family","genus","specificEpithet","infraspecificEpithet","taxonRank","scientificNameAuthorship","taxonomicStatus","nomenclaturalStatus","higherClassification","acceptedNameUsage")]
+#        
       }
       
     } 
@@ -284,6 +472,43 @@ sinonimos.FloraBR2020<-function(g='',s='',i='')
   return(synonym)
 }
 
+
+###---------------------------------------------------------------------###
+#atualizar conforme nome aceito
+nome.aceito.sinonimos.FloraBR2020 <- function(genus = '', specificEpithet = '', infraspecificEpithet = '')
+{
+  names.full = names = synanyms = NA
+  names = data.frame(names=nome.aceito.FloraBR2020(genus,specificEpithet,infraspecificEpithet)$scientificNamewithoutAuthor, stringsAsFactors = F)
+  names.full= names
+  synanyms = sinonimos.FloraBR2020(genus,specificEpithet,infraspecificEpithet)
+  if (any(!is.na(synanyms)))
+  {
+    synanyms = data.frame(names=synanyms$synonymWithoutAuthor, stringsAsFactors = F)  
+    names.full=data.frame(names=rbind(names,synanyms), stringsAsFactors = F)}
+  return(names.full)
+}
+
+
+###---------------------------------------------------------------------###
+
+confere.lista.FloraBR2020 <- function(genus,specificEpithet,infraspecificEpithet,maxDist=1)
+{
+  
+  x <- lx <- {}
+  g=as.character(genus)
+  s=as.character(specificEpithet)
+  i=as.character(infraspecificEpithet)
+
+  for (t in 1:length(g)){
+    x=nome.aceito.FloraBR2020(g[t], s[t], i[t],maxDist=maxDist)
+    lx = rbind(lx,x)
+  }
+  
+  return(lx)
+  
+}  
+
+
 ###---------------------------------------------------------------------###
 
 # precisa ajustes 31-08-2017 Pablo H.
@@ -311,6 +536,10 @@ sinonimos.FloraBR2020<-function(g='',s='',i='')
 # Exemplos de uso:
  
 # View(nome.aceito.FloraBR2020(g='Cavanillesia',s='arborea',i=''))
+
+# nome.aceito.sinonimos.FloraBR2020('Bomarea','edulis')$names
+
+# nome.aceito.sinonimos.FloraBR2020('Adiantum','calcareum')$names
 
 # nome.aceito.FloraBR2020(g='Cavanillesia',s='arborea',i='')$scientificNamewithoutAuthor
 
