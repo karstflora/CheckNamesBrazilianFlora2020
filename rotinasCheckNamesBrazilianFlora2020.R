@@ -7,11 +7,12 @@ source('CheckNamesBrazilianFlora2020.R')
 
 spp <- fread(choose.files(), na.strings="", encoding="Latin-1") # encoding="UTF-8" and "Latin-1"
 
-# spp$g <- spp$Genero_Publicacao
-# spp$s <- spp$`Epiteto Especifico_Publicacao`
-# spp$i <- rep('',NROW(spp))
+spp$g <- spp$genus
+spp$s <- spp$specificEpithet
+spp$i <- spp$infraspecificEpithet
 
 spp$g <- ifelse(is.na(spp$g),'',spp$g)
+spp$g <- ifelse(spp$g=='',spp$family,spp$g)
 spp$s <- ifelse(is.na(spp$s),'',spp$s)
 spp$i <- ifelse(is.na(spp$i),'',spp$i)
 spp$spp <- paste0(spp$g,' ',spp$s,' ',spp$i)
