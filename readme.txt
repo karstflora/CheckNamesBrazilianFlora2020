@@ -4,7 +4,7 @@
 ### download the latest version of this resource data as a Darwin Core Archive (DwC-A)
 ### unzip file and set path 
 
-# Exemplos de uso:
+# Examples
  
 # View(nome.aceito.FloraBR2020(g='Cavanillesia',s='arborea',i=''))
 
