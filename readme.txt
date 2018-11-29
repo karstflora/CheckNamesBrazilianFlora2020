@@ -5,23 +5,27 @@
 ### unzip file and set path 
 
 # Examples
+
+# genus <- "Cereus"
+# specificEpithet <- "jamacaru"
+# infraspecificEpithet <- ""
+# x<-nome.aceito.FloraBR2020(genus, specificEpithet, infraspecificEpithet)
+
+# Use the result "Does not occur in Brazil OR Unknown distribution", as an inicative, it must be checked manually on the website. The available information does not allow 100% correct response in these cases. The other results are reliable.
+
+
+# habito.FloraBR2020(x$id)
  
-# View(nome.aceito.FloraBR2020(g='Cavanillesia',s='arborea',i=''))
+# habito.FloraBR2020(x$id, "T")
 
-# nome.aceito.sinonimos.FloraBR2020('Bomarea','edulis')$names
+# substrato.FloraBR2020(x$id)
 
-# nome.aceito.sinonimos.FloraBR2020('Adiantum','calcareum')$names
+# substrato.FloraBR2020(x$id, "T")
 
-# nome.aceito.FloraBR2020(g='Cavanillesia',s='arborea',i='')$scientificNamewithoutAuthor
+# distribuicao.uf.FloraBR2020(x$id)
 
-# nome.aceito.FloraBR2020(g='Hemionitis',s='sp.10',i='')$scientificNamewithoutAuthor
+# endemismo.Brasil.FloraBR2020(x$id)
 
-# View(sinonimos.FloraBR2020(g='Bomarea',s='edulis',i=''))
+# dominiofitogeografico.FloraBR2020(x$id)
 
-# sinonimos.FloraBR2020(g='Bomarea',s='edulis',i='')$synonymWithoutAuthor
-
-# habito.FloraBR2020(nome.aceito.FloraBR2020(g='Cavanillesia',s='arborea',i='')$id)
-
-# substrato.FloraBR2020(nome.aceito.FloraBR2020(g='Cavanillesia',s='arborea',i='')$id)
-
-# distribuicao.uf.FloraBR2020(nome.aceito.FloraBR2020(g='Cavanillesia',s='arborea',i='')$id)
+# tipovegetacao.FloraBR2020(x$id)
