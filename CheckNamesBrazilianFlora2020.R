@@ -421,29 +421,6 @@ tipovegetacao.FloraBR2020 <-function(id=NA)
 }  
 ###---------------------------------------------------------------------###
 
-origem.FloraBR2020<-function(id=NA)
-{
-  
-  indrel = resourcerelationship$id == id
-  idtaceito = resourcerelationship[indrel,]$relatedResourceID
-  
-  indrel = resourcerelationship$id %in% idtaceito
-  idtaceito = resourcerelationship[indrel,]$relatedResourceID
-  
-  o <- distribution$id %in% idtaceito
-  or <- distribution[o,]
-   if (nrow(or)==0) 
-   {
-     origem = data.frame('',stringsAsFactors = FALSE)
-   } else {
-     origem <- data.frame(unique(or$establishmentMeans), stringsAsFactors = FALSE)}
-  colnames(origem) <- c('origem')
-  
-  return(origem)
-}
-
-###---------------------------------------------------------------------###
-
 nome.aceito.FloraBR2020.base <- function(genus="", specificEpithet="" , infraspecificEpithet="")
 {
   #  estrutura de retorno
@@ -763,6 +740,7 @@ nome.aceito.FloraBR2020.base <- function(genus="", specificEpithet="" , infraspe
   
 }  
 
+###---------------------------------------------------------------------###
 
 nome.aceito.FloraBR2020 <- function(genus="", specificEpithet="" , infraspecificEpithet="")
 {
@@ -867,7 +845,7 @@ nome.aceito.FloraBR2020 <- function(genus="", specificEpithet="" , infraspecific
 }
 
 ###---------------------------------------------------------------------###
-confere.lista.FloraBR2020 <- function(genus,specificEpithet,infraspecificEpithet,maxDist=1)
+confere.lista.FloraBR2020 <- function(genus,specificEpithet,infraspecificEpithet)
 {
   
   x <- lx <- {}
@@ -876,7 +854,7 @@ confere.lista.FloraBR2020 <- function(genus,specificEpithet,infraspecificEpithet
   i=as.character(infraspecificEpithet)
 
   for (t in 1:length(g)){
-    x=nome.aceito.FloraBR2020(g[t], s[t], i[t],maxDist=maxDist)
+    x=nome.aceito.FloraBR2020(g[t], s[t], i[t])
     lx = rbind(lx,x)
   }
   
@@ -1059,62 +1037,3 @@ occurrenceRemarks.FloraBR2020 <-function(id=NA)
 
 ###---------------------------------------------------------------------###
 
-get.FloraBR2020 <- function(spp=NA) 
-{
-  
-  spp$g <- spp$genus
-  spp$s <- spp$specificEpithet
-  spp$i <- spp$infraspecificEpithet
-  
-  sis <- confere.lista.FloraBR2020(spp$g[1],spp$s[1],spp$i[1])[0,]
-  
-  for(l in 1:NROW(spp))
-  {
-    sis.tmp <- confere.lista.FloraBR2020(spp$g[l],spp$s[l],spp$i[l],maxDist=2)
-    sis <- rbind(sis,sis.tmp)
-    print(paste0(l,' - ', sis.tmp$status,' [', sis.tmp$scientificNamewithoutAuthor,'] <- (',spp$g[l], ' ', spp$s[l], ') '))
-  }
-  
-  # nome.busca <- data.frame(gen.busca=spp$g, esp.busca=spp$s, inf.esp.busca=spp$i)
-  # FloraBR2020 <- cbind(sis, nome.busca)
-  # 
-  # nomescol <- colnames(FloraBR2020)
-  # Encoding(nomescol) = "UTF-8"
-  # colnames(FloraBR2020) <- nomescol
-  # nomescol <- colnames(FloraBR2020)
-  # for (c in  length(nomescol))
-  # {
-  #   x = FloraBR2020[,1]
-  #   Encoding(nomescol) = "UTF-8"
-  #   FloraBR2020[,c] = x
-  # }
-  
-  return(sis)
-}
-
-###---------------------------------------------------------------------###
-
-# Exemplos de uso:
- 
-# View(nome.aceito.FloraBR2020(g='Cavanillesia',s='arborea',i=''))
-
-# nome.aceito.sinonimos.FloraBR2020('Bomarea','edulis')$names
-
-# nome.aceito.sinonimos.FloraBR2020('Adiantum','calcareum')$names
-
-# nome.aceito.FloraBR2020(g='Cavanillesia',s='arborea',i='')$scientificNamewithoutAuthor
-
-# nome.aceito.FloraBR2020(g='Hemionitis',s='sp.10',i='')$scientificNamewithoutAuthor
-
-# View(sinonimos.FloraBR2020(g='Bomarea',s='edulis',i=''))
-
-# sinonimos.FloraBR2020(g='Bomarea',s='edulis',i='')$synonymWithoutAuthor
-
-# habito.FloraBR2020(nome.aceito.FloraBR2020(g='Cavanillesia',s='arborea',i='')$id)
-
-# substrato.FloraBR2020(nome.aceito.FloraBR2020(g='Cavanillesia',s='arborea',i='')$id)
-
-# distribuicao.uf.FloraBR2020(nome.aceito.FloraBR2020(g='Cavanillesia',s='arborea',i='')$id)
-
-###---------------------------------------------------------------------###
-#,AC,AL,AM,AP,BA,CE,DF,ES,GO,MA,MG,MS,MT,PA,PB,PE,PI,PR,RJ,RN,RO,RR,RS,SC,SE,SP,TO,origem,endemism,AtlanticRainforest,AmazonRainforest,Caatinga,CentralBrazilianSavanna,Pampa,Pantanal,AREA_ANTROPICA,CAATINGA,CAMPINARANA,CAMPO_DE_ALTITUDE,CAMPO_DE_VARZEA,CAMPO_LIMPO,CAMPO_RUPESTRE,CARRASCO,CERRADO,FLORESTA_CILIAR_OU_GALERIA,FLORESTA_DE_IGAPO,FLORESTA_DE_TERRA_FIRME,FLORESTA_DE_VARZEA,FLORESTA_ESTACIONAL_DECIDUAL,FLORESTA_ESTACIONAL_PERENIFOLIA,FLORESTA_ESTACIONAL_SEMIDECIDUAL,FLORESTA_OMBROFILA,FLORESTA_OMBROFILA_MISTA,MANGUEZAL,PALMEIRAL,RESTINGA,SAVANA_AMAZONICA,VEGETACAO_AQUATICA,VEGETACAO_SOBRE_AFLORAMENTOS_ROCHOSOS,id,scientific.name,accepted.name,family,taxon.rank,taxon.status,search.str,threat.status,notes,original.search,life.form
